@@ -141,11 +141,12 @@ button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;background:no
 .saved-meal-name{font-weight:600;}.saved-meal-macros{font-size:12px;color:var(--text2);}
 .save-meal-prompt{background:var(--accent-dim);border:1px dashed var(--accent);border-radius:var(--rsm);padding:12px;margin-top:12px;}
 .save-meal-prompt input{margin-bottom:8px;}
-/* QoL Score */
-.qol-score{text-align:center;padding:24px;background:linear-gradient(135deg,var(--bg3) 0%,var(--bg2) 100%);border-radius:var(--r);border:1px solid var(--accent);margin-bottom:16px;}
-.qol-number{font-size:72px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent);}
-.qol-label{font-size:12px;color:var(--text3);margin-top:8px;}
-.qol-message{font-size:14px;color:var(--text2);margin-top:12px;line-height:1.5;}
+/* Daily Wins */
+.daily-wins{padding:20px;background:linear-gradient(135deg,var(--bg3) 0%,var(--bg2) 100%);border-radius:var(--r);border:1px solid var(--accent);margin-bottom:16px;}
+.daily-wins-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.daily-wins-icon{font-size:24px;}
+.daily-wins-title{font-size:14px;font-weight:600;color:var(--accent);}
+.daily-wins-message{font-size:15px;color:var(--text);line-height:1.6;}
 /* Partner note */
 .partner-note{background:linear-gradient(135deg,rgba(244,114,182,0.1) 0%,rgba(167,139,250,0.1) 100%);border:1px solid var(--pink);border-radius:var(--r);padding:20px;margin-bottom:16px;cursor:pointer;}
 .partner-note-header{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
@@ -258,7 +259,7 @@ body.mode-gym{--accent:#22c55e;}
     <div class="greet">Good evening!</div>
     <div class="greet-sub">Let's see how today went.</div>
     <div id="partner-note-container"></div>
-    <div class="qol-score" id="qol-score-card"><div class="qol-number" id="qol-number">-</div><div class="qol-label">Quality of Life Score</div><div class="qol-message" id="qol-message"></div></div>
+    <div class="daily-wins" id="daily-wins-card"><div class="daily-wins-header"><span class="daily-wins-icon">✨</span><span class="daily-wins-title">Daily Wins</span></div><div class="daily-wins-message" id="daily-wins-message">Loading...</div></div>
     <div class="gains-card" id="evening-gains-card"><div class="gains-header"><div class="gains-avatar">💪</div><div class="gains-name">Gains</div></div><div class="gains-message" id="evening-gains-message">Loading your daily summary...</div></div>
     <div class="evening-summary"><h3>Today's Summary</h3><div class="evening-stat"><span class="evening-label">Calories</span><span class="evening-value" id="eve-cal">0</span></div><div class="evening-stat"><span class="evening-label">Protein</span><span class="evening-value" id="eve-pro">0g</span></div><div class="evening-stat"><span class="evening-label">Water</span><span class="evening-value" id="eve-water">0 bottles</span></div><div class="evening-stat"><span class="evening-label">Workout</span><span class="evening-value" id="eve-workout">-</span></div></div>
     <div class="card"><div class="card-title">🏆 Today's Wins</div><div class="wins-grid" id="wins-grid"><div class="win-badge" id="win-workout"><span class="win-icon">🏃</span><div class="win-label">Showed Up</div><div class="win-sub">Logged a workout</div></div><div class="win-badge" id="win-water"><span class="win-icon">💧</span><div class="win-label">Hydrated</div><div class="win-sub">Hit water goal</div></div><div class="win-badge" id="win-protein"><span class="win-icon">🥩</span><div class="win-label">Fed the Muscle</div><div class="win-sub">Hit protein goal</div></div><div class="win-badge" id="win-sleep"><span class="win-icon">😴</span><div class="win-label">Recovered</div><div class="win-sub">Logged sleep</div></div></div></div>
@@ -310,10 +311,10 @@ if(synced){d.synced=true;saveTodayData(d);window.history.replaceState({},'',wind
 return synced;}
 function showSyncedBadge(){const d=getTodayData();const container=document.getElementById('synced-badge-container');if(d.synced){container.innerHTML='<div class="synced-badge">⌚ Synced from Apple Watch</div>';}else{container.innerHTML='';}}
 // Mode Selection
-function selectMode(mode){currentMode=mode;document.body.className='mode-'+mode;document.getElementById('mode-selector').classList.add('hidden');document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));document.getElementById('mode-'+mode+'-btn').classList.add('active');localStorage.setItem('liftlyfe_mode',mode);renderHome();if(mode==='gym'){showPage('home',document.querySelector('.nb'));renderGymWorkout();}if(mode==='evening'){generateEveningMessage();calculateQoLScore();renderPartnerNote();}}
+function selectMode(mode){currentMode=mode;document.body.className='mode-'+mode;document.getElementById('mode-selector').classList.add('hidden');document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));document.getElementById('mode-'+mode+'-btn').classList.add('active');localStorage.setItem('liftlyfe_mode',mode);renderHome();if(mode==='gym'){showPage('home',document.querySelector('.nb'));renderGymWorkout();}if(mode==='evening'){generateEveningMessage();generateDailyWinsMessage();renderPartnerNote();}}
 // Navigation
 function showPage(name,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+name).classList.add('active');btn.classList.add('active');if(name==='home')renderHome();if(name==='workout')renderWorkout();if(name==='progress')renderProgress();if(name==='coach'){if(document.getElementById('chat-messages').children.length===0)initChat();renderSavedMeals();}if(name==='settings')loadSettings();}
-function switchProfile(p){profile=p;document.querySelectorAll('.pb').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');document.getElementById('chat-messages').innerHTML='';chatHistory=[];renderHome();if(currentMode==='gym')renderGymWorkout();if(currentMode==='evening'){generateEveningMessage();calculateQoLScore();renderPartnerNote();}}
+function switchProfile(p){profile=p;document.querySelectorAll('.pb').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');document.getElementById('chat-messages').innerHTML='';chatHistory=[];renderHome();if(currentMode==='gym')renderGymWorkout();if(currentMode==='evening'){generateEveningMessage();generateDailyWinsMessage();renderPartnerNote();}}
 // Home
 function renderHome(){const d=getTodayData();const g=getGoals();const name=profile==='austin'?'Austin':'Danielle';
 if(currentMode==='morning'){const hr=new Date().getHours();const greeting=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';document.getElementById('greet-name').textContent=`${greeting}, ${name}!`;document.getElementById('greet-sub').textContent=getMotivationalSub();renderWaterTracker(d,g);renderSupplements(d);document.getElementById('danielle-food-options').style.display=profile==='danielle'?'block':'none';showSyncedBadge();}
@@ -330,17 +331,53 @@ function toggleSupp(i){const d=getTodayData();if(!d.supps)d.supps={};d.supps[i]=
 function selectMood(el,mood){el.parentElement.querySelectorAll('.mood-item').forEach(m=>m.classList.remove('selected'));el.classList.add('selected');const d=getTodayData();d.mood=mood;saveTodayData(d);toast('Mood logged: '+mood);}
 // Wins
 function renderWins(d,g){const wins={workout:d.worked_out,water:d.water>=g.water,protein:d.pro>=g.pro,sleep:d.sleep&&parseFloat(d.sleep)>0};document.getElementById('win-workout').classList.toggle('earned',wins.workout);document.getElementById('win-water').classList.toggle('earned',wins.water);document.getElementById('win-protein').classList.toggle('earned',wins.protein);document.getElementById('win-sleep').classList.toggle('earned',wins.sleep);return Object.values(wins).filter(Boolean).length;}
-// Quality of Life Score
-function calculateQoLScore(){const d=getTodayData();const g=getGoals();let score=0;
-if(d.sleep&&parseFloat(d.sleep)>0)score+=2.5;
-if(d.water>=g.water)score+=2;
-if(d.pro>=g.pro)score+=2;
-if(d.worked_out)score+=2;
-if(d.mood)score+=1.5;
-score=Math.round(score*10)/10;
-const messages={10:"Perfect day! You showed up in every way that matters.",9:"Incredible day. You're building something amazing.",8:"Great day! This is what consistency looks like.",7:"Solid day. You're doing better than you think.",6:"Good effort today. Progress isn't always linear.",5:"You showed up. That counts for a lot.",4:"Some days are harder. Tomorrow's a fresh start.",3:"Rest is part of the process. Be kind to yourself.",2:"Just being here matters. Tomorrow is new.",1:"Every day is a chance to begin again."};
-const msg=messages[Math.ceil(score)]||"Tomorrow is a fresh start.";
-document.getElementById('qol-number').textContent=score;document.getElementById('qol-message').textContent=msg;}
+// Daily Wins Message
+function generateDailyWinsMessage(){const d=getTodayData();const g=getGoals();const name=profile==='austin'?'Austin':'Danielle';
+const wins=[];
+if(d.worked_out)wins.push('workout');
+if(d.water>=g.water)wins.push('water');
+if(d.pro>=g.pro)wins.push('protein');
+if(d.sleep&&parseFloat(d.sleep)>0)wins.push('sleep');
+if(d.foods&&d.foods.length>0)wins.push('food');
+if(d.mood)wins.push('mood');
+let msg='';
+if(wins.length>=4){
+const great=[
+`${name}, you absolutely showed UP today. Workout crushed, fueled right, hydrated like a champion. This is the energy that changes everything. Sleep well tonight — you earned it. 💪`,
+`Look at you! Training done, protein hit, water on point. You're literally building a better version of yourself one day at a time. I'm genuinely proud of you. Rest up, superstar. ✨`,
+`Today was a FULL send and I'm here for it. You moved your body, fed it right, and stayed on top of hydration. That's not just a good day — that's discipline becoming habit. 🔥`,
+`${name}. Workout? Check. Nutrition? Check. Hydration? Check. You're stacking wins like they owe you money. This consistency is what separates dreamers from doers. Now go rest. 💚`
+]
+msg=great[Math.floor(Math.random()*great.length)];}
+else if(wins.includes('workout')){
+const workout=[
+`You showed up and moved your body today. That's the hardest part and you did it. Everything else is just details. Be proud of yourself tonight. 💪`,
+`Training day in the books! Your muscles are gonna thank you tomorrow (well, maybe complain a little first, but THEN thank you). Rest up, champ. 🏆`,
+`You got your workout in today and that alone makes today a win. The weights don't care what else happened — you showed up when it mattered. 💚`
+]
+msg=workout[Math.floor(Math.random()*workout.length)];}
+else if(wins.includes('water')||wins.includes('protein')||wins.includes('food')){
+const fuel=[
+`You took care of your nutrition today — that's literally fueling your future self. Not every day needs a PR. Sometimes just eating well IS the win. 🍽️`,
+`Fed the body, checked in with yourself. That's self-care in its realest form. No workout needed to call today a success. You're doing great. 💚`,
+`Today was about fuel and recovery, and you handled it. Rest days matter. Nutrition matters. YOU matter. See you on the next one. ✨`
+]
+msg=fuel[Math.floor(Math.random()*fuel.length)];}
+else if(wins.length>0){
+const some=[
+`Hey, you checked in today. You logged something. You're still here, still tracking, still in the game. That counts more than you know. 💚`,
+`Not every day is a highlight reel, and that's completely fine. You showed up in your own way today. Tomorrow's a fresh page. ✨`,
+`You did what you could today, and that's enough. Seriously. Progress isn't always loud — sometimes it's just... showing up. Proud of you. 💪`
+]
+msg=some[Math.floor(Math.random()*some.length)];}
+else{
+const rest=[
+`Rest days are growth days. Your body builds muscle while you recover, not while you lift. If today was quiet, that's okay. We go again soon. 💚`,
+`Hey — not every day needs a checklist of wins. Sometimes just existing and taking it easy IS the move. No judgment here, ever. See you tomorrow. ✨`,
+`Quiet day? That's fine. You don't have to earn rest. You don't have to perform every single day. Just being here and checking in matters. 💪`
+]
+msg=rest[Math.floor(Math.random()*rest.length)];}
+document.getElementById('daily-wins-message').textContent=msg;}
 // Food Mode
 function setFoodMode(mode){const d=getTodayData();d.foodMode=mode;saveTodayData(d);document.querySelectorAll('.food-opt').forEach(o=>o.classList.remove('selected'));event.target.closest('.food-opt').classList.add('selected');if(mode==='skip')toast("No tracking today — that's completely fine 😌");else if(mode==='checkin'){showPage('coach',document.querySelector('.nb:nth-child(3)'));toast("Let's just chat about how eating felt today");}}
 // Partner Notes
@@ -373,7 +410,7 @@ function renderProgress(){const weights=get('weights')||[];if(weightChart)weight
 function renderWorkoutHistory(){const hist=document.getElementById('workout-history');const recent=[];for(let i=0;i<14;i++){const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().split('T')[0];const day=JSON.parse(localStorage.getItem(profile+'_day_'+ds)||'{}');if(day.worked_out)recent.push(ds);}hist.innerHTML=recent.length?recent.map(d=>`<div style="padding:12px 0;border-bottom:1px solid var(--border);font-size:14px;">💪 ${d}</div>`).join(''):'<div style="text-align:center;color:var(--text3);padding:20px;">No workouts logged yet</div>';}
 function renderPRList(){const prList=document.getElementById('pr-list');const prs=[];Object.keys(PROGRAMS[profile]).forEach(dayName=>{PROGRAMS[profile][dayName].forEach((ex,ei)=>{for(let si=0;si<ex.sets;si++){const prevKey=`${profile}_prev_${dayName}_${ei}_${si}`;const prev=JSON.parse(localStorage.getItem(prevKey)||'null');if(prev&&prev.w){const existing=prs.find(p=>p.name===ex.name);if(!existing||parseFloat(prev.w)>parseFloat(existing.weight)){if(existing){existing.weight=prev.w;existing.reps=prev.r;existing.date=prev.date;}else{prs.push({name:ex.name,weight:prev.w,reps:prev.r,date:prev.date});}}}}});});prList.innerHTML=prs.length?prs.map(pr=>`<div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;"><span style="font-weight:500;">${pr.name}</span><span style="color:var(--accent);font-weight:600;">${pr.weight}lbs × ${pr.reps}</span></div>`).join(''):'<div style="text-align:center;color:var(--text3);padding:20px;">Complete some exercises to track PRs!</div>';}
 function logWeight(){const val=parseFloat(document.getElementById('weight-input').value);if(!val)return;const weights=get('weights')||[];weights.push({date:today(),w:val});set('weights',weights);document.getElementById('weight-input').value='';renderProgress();toast(`${val}lbs logged ⚖️`);}
-function logSleepTarget(){const val=document.getElementById('sleep-target').value;if(!val)return;const d=getTodayData();d.sleep=val;saveTodayData(d);toast(`Sleep target: ${val} hours 😴`);renderHome();calculateQoLScore();}
+function logSleepTarget(){const val=document.getElementById('sleep-target').value;if(!val)return;const d=getTodayData();d.sleep=val;saveTodayData(d);toast(`Sleep target: ${val} hours 😴`);renderHome();generateDailyWinsMessage();}
 // Settings
 function loadSettings(){const g=getGoals();document.getElementById('g-cal').value=g.cal;document.getElementById('g-pro').value=g.pro;document.getElementById('g-water').value=g.water;document.getElementById('g-rest').value=g.rest||90;}
 function saveGoals(){const g={cal:parseInt(document.getElementById('g-cal').value)||DEFAULTS[profile].cal,pro:parseInt(document.getElementById('g-pro').value)||DEFAULTS[profile].pro,carb:DEFAULTS[profile].carb,fat:DEFAULTS[profile].fat,water:parseInt(document.getElementById('g-water').value)||3,steps:DEFAULTS[profile].steps,rest:parseInt(document.getElementById('g-rest').value)||90};set('goals',g);toast('Goals saved! 🎯');}
@@ -393,7 +430,7 @@ ABOUT YOU:
 - You understand GLP-1 medications deeply — appetite suppression means under-eating is the real risk, not overeating.
 - You know their full workout programs and can give specific advice.
 - You have access to their RPE/RIR data from workouts and use it to advise on progressive overload.
-- You know their Quality of Life scores over time and factor them into recovery advice.
+- You celebrate their daily wins and factor what they've accomplished into your encouragement.
 - You can reference their saved meals when giving nutrition advice.
 - Your entire purpose is to get Austin and Danielle in the best shape of their lives while making them feel great about themselves every single day.
 
